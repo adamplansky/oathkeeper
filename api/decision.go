@@ -22,6 +22,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/ory/oathkeeper/x"
 
@@ -83,13 +84,22 @@ func (h *DecisionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, next
 //       404: genericError
 //       500: genericError
 func (h *DecisionHandler) decisions(w http.ResponseWriter, r *http.Request) {
+	ct := r.Header.Get("content-type")
 	rl, err := h.r.RuleMatcher().Match(r.Context(), r.Method, r.URL)
 	if err != nil {
 		h.r.Logger().WithError(err).
 			WithField("granted", false).
 			WithField("access_url", r.URL.String()).
 			Warn("Access request denied")
-		h.r.Writer().WriteError(w, r, err)
+		//h.r.Writer().WriteError(w, r, err)
+		if strings.Contains(ct, "application/grpc"){
+			w.Header().Set("Content-Type", "application/grpc")
+			w.Header().Set("grpc-message", err.Error())
+			w.WriteHeader(http.StatusUnauthorized)
+			//w.WriteHeader(http.StatusOK)
+		} else {
+			h.r.Writer().WriteError(w, r, err)
+		}
 		return
 	}
 
@@ -99,7 +109,15 @@ func (h *DecisionHandler) decisions(w http.ResponseWriter, r *http.Request) {
 			WithField("granted", false).
 			WithField("access_url", r.URL.String()).
 			Warn("Access request denied")
-		h.r.Writer().WriteError(w, r, err)
+		if strings.Contains(ct, "application/grpc"){
+			w.Header().Set("Content-Type", "application/grpc")
+			w.Header().Set("grpc-message", err.Error())
+			w.WriteHeader(http.StatusUnauthorized)
+			//w.WriteHeader(http.StatusOK)
+		} else {
+			h.r.Writer().WriteError(w, r, err)
+		}
+
 		return
 	}
 
