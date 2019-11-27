@@ -1,4 +1,4 @@
-module github.com/ory/oathkeeper
+module github.com/adamplansky/oathkeeper
 
 require (
 	github.com/Masterminds/goutils v1.1.0 // indirect
